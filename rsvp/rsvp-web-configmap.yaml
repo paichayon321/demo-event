@@ -46,6 +46,7 @@ spec:
   - port: 80
     targetPort: web-port
     protocol: TCP
+    nodePort: 30896
   selector:
     app: rsvp
 ---
@@ -57,21 +58,3 @@ data:
   TEXT1: Hello Every body 
   TEXT2: Welcome 
   COMPANY: MVERGE.,LTD
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: rsvp-ingress
-  annotations: 
-     nginx.ingress.kubernetes.io/rewrite-target:  "/"
-spec:
-  rules:
-  - host: www.mydemo.local
-    http:
-      paths:
-      - backend:
-          serviceName: rsvp
-          servicePort: 80
-        path: /rsvp
-  
-
