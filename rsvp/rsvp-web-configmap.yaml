@@ -1,0 +1,77 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rsvp
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rsvp
+    spec:
+      containers:
+      - name: rsvp-app
+        image: paichayon/rsvp
+        env:
+        - name: MONGODB_HOST
+          value: mongodb
+        - name: TEXT1
+          valueFrom:
+            configMapKeyRef:
+                name: customer1
+                key: TEXT1
+        - name: TEXT2
+          valueFrom:
+            configMapKeyRef:
+                name: customer1
+                key: TEXT2
+        - name: COMPANY
+          valueFrom:
+            configMapKeyRef:
+                name: customer1
+                key: COMPANY                
+        ports:
+        - containerPort: 5000
+          name: web-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rsvp
+  labels:
+    apps: rsvp
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: web-port
+    protocol: TCP
+  selector:
+    app: rsvp
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: customer1
+data:
+  TEXT1: Hello Every body 
+  TEXT2: Welcome 
+  COMPANY: MVERGE.,LTD
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: rsvp-ingress
+  annotations: 
+     nginx.ingress.kubernetes.io/rewrite-target:  "/"
+spec:
+  rules:
+  - host: www.mydemo.local
+    http:
+      paths:
+      - backend:
+          serviceName: rsvp
+          servicePort: 80
+        path: /rsvp
+  
+
