@@ -1,0 +1,63 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+  name: web-production
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: web-production
+    spec:
+      containers:
+      - image: paichayon/demo-php:1
+        name: web-production
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: production-service
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    name: web-production
+  type: ClusterIP
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: procduction-scale
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    name: web-production
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 10
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: production-ingress
+  annotations: 
+     nginx.ingress.kubernetes.io/rewrite-target:  "/"
+spec:
+  rules:
+  - host: www.mydemo.local
+    http:
+      paths:
+      - backend:
+          serviceName: production-service
+          servicePort: 80
+        path: /prod

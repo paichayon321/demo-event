@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: production-ingress
+  annotations: 
+     nginx.ingress.kubernetes.io/rewrite-target:  "/"
+spec:
+  rules:
+  - host: www.mydemo.local
+    http:
+      paths:
+      - backend:
+          serviceName: uat-service
+          servicePort: 80
+        path: /prod

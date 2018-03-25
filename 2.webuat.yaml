@@ -1,0 +1,63 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+  name: web-uat
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: web-uat
+    spec:
+      containers:
+      - image: paichayon/demo-php:2
+        name: web-uat
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: uat-service
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    name: web-uat
+  type: ClusterIP
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: uat-scale
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    name: web-uat
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 10
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: uat-ingress
+  annotations: 
+     nginx.ingress.kubernetes.io/rewrite-target:  "/"
+spec:
+  rules:
+  - host: www.mydemo.local
+    http:
+      paths:
+      - backend:
+          serviceName: uat-service
+          servicePort: 80
+        path: /uat
