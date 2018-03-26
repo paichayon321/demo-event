@@ -1,0 +1,83 @@
+Demo autoscaling and Ingress
+git clone https://github.com/paichayon321/demo-event.git
+
+
+Prepare Environment:
+On Minikube Open Port 80, 30000-32767
+minikube start --vm-driver=none --extra-config=controller-manager.HorizontalPodAutoscalerUseRESTClients=false
+minikube addons enable ingress
+minikube addons enable heapster
+sudo docker pull paichayon/demo-php:1
+sudo docker pull paichayon/demo-php:2
+sudo docker pull paichayon/rsvp
+sudo docker pull mongo:3.3
+sudo docker pull prom/prometheus:v2.1.0
+sudo docker pull paichayon/busybox
+kubectl get pods --all-namespaces
+## Enable Grafana Dashboard
+http://192.168.102.32:30002
+
+sudo kubectl apply -f 1.webproduction.yaml
+http://www.mydemo.local:30080/prod
+
+#sudo kubectl run -i --tty load-generator --image=paichayon/busybox /bin/sh
+#echo 192.168.102.32 www.mydemo.local >> /etc/hosts 
+#echo 192.168.99.100 www.mydemo.local >> /etc/hosts 
+#while true; do wget -q -O- http://www.mydemo.local:30080/prod/genload.php; done
+
+## Demo
+
+sudo kubectl apply -f 2.webuat.yaml
+http://www.mydemo.local:30080/uat
+
+sudo kubectl apply -f 3.switch-blue2green.yaml
+sudo kubectl apply -f 4.webproduction-changeversion.yaml
+sudo kubectl apply -f 5.switch-green2green.yaml
+sudo kubectl delete ingress uat-ingress
+
+sudo kubectl apply -f ./rsvp/rsvp-db.yaml
+sudo kubectl apply -f ./rsvp/rsvp-web-configmap.yaml
+sudo kubectl apply -f ./rsvp/rsvp-ingress.yaml
+http://192.168.102.32:30896
+
+
+## Cleanup Environment
+sudo kubectl delete -f 1.webproduction.yaml
+sudo kubectl delete -f 2.webuat.yaml
+
+sudo kubectl delete -f ./rsvp/rsvp-db.yaml
+sudo kubectl delete -f ./rsvp/rsvp-web-configmap.yaml
+
+#sudo kubectl delete deployment load-generator
+#kubectl delete svc uat-service
+#kubectl delete svc production-service
+#kubectl delete hpa production-scale
+#kubectl delete ingress production-ingress
+#kubectl delete deployment web-uat
+#kubectl delete deployment web-production
+
+##
+Ref: Running Kubernetes Locally via Minikube
+
+
+minikube get-k8s-versions
+minikube start --kubernetes-version v1.8.0
+
+With --horizontal-pod-autoscaler-use-rest-clients=true HPA uses new resource metrics API instead of old way of getting metrics. Setting it to false as you did works, but probably the correct long term solution is to run metrics server as part of your cluster set up. This is documented here: https://kubernetes.io/docs/tasks/debug-application-cluster/core-metrics-pipeline/
+
+
+if you using minikube, there are manifest files(.yaml) for kube-controller-manager
+
+/etc/kubernetes/manifests/kube-controller-manager.yaml
+you can add new lines and config infos.
+parameter --horizontal-pod-autoscaler-use-rest-clients=false
+
+
+## Can not stop minikube on Ubantu running on HyperVisor
+Ref:  https://github.com/kubernetes/minikube/issues/2549
+Just download minikube and stop from this bin.
+wget https://storage.googleapis.com/minikube-builds/2550/minikube-linux-amd64
+chmod +x minikube-linux-amd64
+minikube-linux-amd64 stop
+
+
