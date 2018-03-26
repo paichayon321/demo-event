@@ -4,6 +4,9 @@ git clone https://github.com/paichayon321/demo-event.git
 
 Prepare Environment:
 On Minikube Open Port 80, 30000-32767
+##Add hosts file on Client Machine
+192.168.102.32 www.mydemo.local monitor.mydemo.local rsvp.mydemo.local
+
 minikube start --vm-driver=none --extra-config=controller-manager.HorizontalPodAutoscalerUseRESTClients=false
 minikube addons enable ingress
 minikube addons enable heapster
@@ -15,31 +18,38 @@ sudo docker pull prom/prometheus:v2.1.0
 sudo docker pull paichayon/busybox
 kubectl get pods --all-namespaces
 ## Enable Grafana Dashboard
-http://192.168.102.32:30002
+#http://192.168.102.32:30002
+http://monitor.mydemo.local
 
+
+## Demo 1 : Manual / Autoscale
 sudo kubectl apply -f 1.webproduction.yaml
-http://www.mydemo.local:30080/prod
+http://www.mydemo.local/prod
+
 
 #sudo kubectl run -i --tty load-generator --image=paichayon/busybox /bin/sh
-#echo 192.168.102.32 www.mydemo.local >> /etc/hosts 
-#echo 192.168.99.100 www.mydemo.local >> /etc/hosts 
-#while true; do wget -q -O- http://www.mydemo.local:30080/prod/genload.php; done
+sudo kubectl exec -ti load-generator-5dd987c597-8cjzf /bin/sh
+echo 192.168.102.32 www.mydemo.local >> /etc/hosts
+while true; do wget -q -O- http://www.mydemo.local/prod/genload.php; done
 
-## Demo
+## Demo 2 : Blue - Green
 
 sudo kubectl apply -f 2.webuat.yaml
-http://www.mydemo.local:30080/uat
+http://www.mydemo.local/uat
 
 sudo kubectl apply -f 3.switch-blue2green.yaml
 sudo kubectl apply -f 4.webproduction-changeversion.yaml
 sudo kubectl apply -f 5.switch-green2green.yaml
 sudo kubectl delete ingress uat-ingress
 
+
+
+## Demo 3: Multiteir Application
 sudo kubectl apply -f ./rsvp/rsvp-db.yaml
 sudo kubectl apply -f ./rsvp/rsvp-web-configmap.yaml
 sudo kubectl apply -f ./rsvp/rsvp-ingress.yaml
 http://192.168.102.32:30896
-
+http://rsvp.mydemo.local
 
 ## Cleanup Environment
 sudo kubectl delete -f 1.webproduction.yaml
@@ -47,6 +57,7 @@ sudo kubectl delete -f 2.webuat.yaml
 
 sudo kubectl delete -f ./rsvp/rsvp-db.yaml
 sudo kubectl delete -f ./rsvp/rsvp-web-configmap.yaml
+sudo kubectl delete -f ./rsvp/rsvp-ingress.yaml
 
 #sudo kubectl delete deployment load-generator
 #kubectl delete svc uat-service
@@ -78,6 +89,4 @@ Ref:  https://github.com/kubernetes/minikube/issues/2549
 Just download minikube and stop from this bin.
 wget https://storage.googleapis.com/minikube-builds/2550/minikube-linux-amd64
 chmod +x minikube-linux-amd64
-minikube-linux-amd64 stop
-
-
+minikubestop stop
